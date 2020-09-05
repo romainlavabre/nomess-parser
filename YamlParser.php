@@ -4,7 +4,7 @@
 namespace Nomess\Component\Parser;
 
 
-use SebastianBergmann\CodeCoverage\ParserException;
+use Nomess\Component\Parser\Exception\ParseException;
 
 class YamlParser implements YamlParserInterface
 {
@@ -23,8 +23,10 @@ class YamlParser implements YamlParserInterface
         }
         
         if($value === false){
-            throw new ParserException('The parser encountered an error with file "' . $filename . '"');
+            throw new ParseException('The parser encountered an error with file "' . $filename . '"');
         }
+        
+        return $value;
     }
     
     /**
@@ -48,6 +50,6 @@ class YamlParser implements YamlParserInterface
     
     private function parseString(string $str): string
     {
-        return str_replace( '%ROOT%', ROOT, $value );
+        return str_replace( '%ROOT%', ROOT, $str );
     }
 }

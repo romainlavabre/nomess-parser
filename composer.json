@@ -3,7 +3,8 @@
     "description": "Parser of nomess",
     "type": "library",
     "require": {
-        "nomess/config": "^0.0.0"
+        "nomess/config": "^0.0.0",
+        "ext-yaml": "*"
     },
     "authors": [
         {
