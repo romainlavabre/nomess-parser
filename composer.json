@@ -5,7 +5,6 @@
     "require": {
         "nomess/config": "^0.0.0"
     },
-    "license": "apache2",
     "authors": [
         {
             "name": "Romain Lavabre",
