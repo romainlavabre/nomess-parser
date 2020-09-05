@@ -11,5 +11,10 @@
             "name": "Romain Lavabre",
             "email": "webmaster@newwebsouth.fr"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "Nomess\\Component\\Parser\\": "/"
+        }
+    }
 }
