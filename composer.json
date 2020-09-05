@@ -1,0 +1,15 @@
+{
+    "name": "nomess/parser",
+    "description": "Parser of nomess",
+    "type": "library",
+    "require": {
+        "nomess/config": "^0.0.0"
+    },
+    "license": "apache2",
+    "authors": [
+        {
+            "name": "Romain Lavabre",
+            "email": "webmaster@newwebsouth.fr"
+        }
+    ]
+}
