@@ -40,7 +40,7 @@ class YamlParser implements YamlParserInterface
         array_walk_recursive( $array, function ( &$value ) {
             if( is_string( $value ) ) {
                 if( strpos( $value, '%ROOT%' ) !== FALSE ) {
-                    str_replace( '%ROOT%', ROOT, $value );
+                    $value = str_replace( '%ROOT%', ROOT, $value );
                 }
             }
         } );
