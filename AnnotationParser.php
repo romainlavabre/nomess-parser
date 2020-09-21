@@ -19,7 +19,7 @@ class AnnotationParser implements AnnotationParserInterface
      */
     public function has( string $annotation, $reflection ): bool
     {
-        return strpos( $reflection->getDocComment( $reflection ), "@$annotation" ) !== FALSE;
+        return strpos( $reflection->getDocComment( ), "@$annotation" ) !== FALSE;
     }
     
     
