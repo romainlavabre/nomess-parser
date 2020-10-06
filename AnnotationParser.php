@@ -12,6 +12,10 @@ use ReflectionProperty;
 class AnnotationParser implements AnnotationParserInterface
 {
     
+    private const ARRAY_LINE     = '|';
+    private const ARRAY_KEY_PAIR = '-@-';
+    
+    
     /**
      * @param string $annotation
      * @param ReflectionProperty|ReflectionClass|ReflectionFunction|ReflectionMethod $reflection
@@ -19,7 +23,7 @@ class AnnotationParser implements AnnotationParserInterface
      */
     public function has( string $annotation, $reflection ): bool
     {
-        return strpos( $reflection->getDocComment( ), "@$annotation" ) !== FALSE;
+        return strpos( $reflection->getDocComment(), "@$annotation" ) !== FALSE;
     }
     
     
@@ -30,8 +34,8 @@ class AnnotationParser implements AnnotationParserInterface
      */
     public function grossValue( string $annotation, $reflection ): ?string
     {
-        if(($line = $this->getLine( $annotation, $reflection)) !== NULL){
-            return str_replace( ['@', $annotation, '(', ')', '[]'], '', $line);
+        if( ( $line = $this->getLine( $annotation, $reflection ) ) !== NULL ) {
+            return trim( str_replace( [ '@', $annotation, '(', ')', '[]' ], '', $line ) );
         }
         
         return NULL;
@@ -43,57 +47,83 @@ class AnnotationParser implements AnnotationParserInterface
      * @param ReflectionProperty|ReflectionClass|ReflectionFunction|ReflectionMethod $reflection
      * @return array
      */
-    public function getValue(string $annotation, $reflection): array
+    public function getValue( string $annotation, $reflection ): array
     {
         $result = [];
         
-        if(preg_match( '/.*\((.*)\)/', $reflection->getDocComment(), $output)){
-            $sections = explode( ',', $output[1]);
+        if( preg_match( '/' . $annotation . '\((.*)\)/i', $reflection->getDocComment(), $output ) ) {
             
-            if(is_array( $sections)){
-                foreach($sections as $section){
-                    if(strpos( $section, '=') !== FALSE){
-                        $pair = explode( '=', $section);
+            
+            $output[1] = str_replace( '=>', self::ARRAY_KEY_PAIR, $output[1] );
+            
+            $sections = explode( ',', $output[1] );
+            if( is_array( $sections ) ) {
+                foreach( $sections as $section ) {
+                    
+                    if( strpos( $section, '=' ) !== FALSE ) {
+                        $pair = explode( '=', $section );
                         
-                        $result[$key = $this->convertToString( $pair[0])] = NULL;
+                        $result[$key = $this->convertToString( $pair[0] )] = NULL;
                         
-                        if(preg_match( '/".*"/', $pair[1])){
-                            $result[$key] = $this->convertToString( $pair[1]);
-                        }else{
-                            $array = explode( ',', $pair[1]);
+                        if( preg_match( '/^".*"$/', $pair[1] ) ) {
+                            $result[$key] = $this->convertToString( $pair[1] );
+                        } elseif( strpos( mb_strtolower( $pair[1] ), 'true' ) !== FALSE
+                                  || strpos( mb_strtolower( $pair[1] ), 'false' ) ) {
                             
-                            if(is_array( $array)){
-                                foreach($array as $item){
-                                    $item = $this->convertToPair( $item);
+                            $result[$key] = (bool)$pair[1];
+                        } elseif( preg_match( '/^ *[0-9]+ *$/', $pair[1] ) ) {
+                            $result[$key] = (integer)$pair[1];
+                        } elseif( preg_match( '/^ *[0-9]+\.[0-9]+ *$/', $pair[1] ) ) {
+                            $result[$key] = (double)$pair[1];
+                        } else {
+                            
+                            $pair[1] = preg_replace( '/^\[/', '', $pair[1]);
+                            $pair[1] = preg_replace( '/]$/', '', $pair[1]);
+                            $pair[1] = preg_replace( '/^\{/', '', $pair[1]);
+                            $pair[1] = preg_replace( '/}$/', '', $pair[1]);
+                            $array   = explode( self::ARRAY_LINE, $pair[1] );
+                            
+                            if( is_array( $array ) ) {
+                                foreach( $array as $item ) {
+                                    $item = $this->convertToPair( $item );
                                     
-                                    $result[$key][key($item)] = current( $item);
+                                    if( is_int( key( $item ) ) ) {
+                                        $result[$key][] = current( $item );
+                                    } else {
+                                        $result[$key][key( $item )] = current( $item );
+                                    }
                                 }
-                            }else{
-                                $result[$key] = $this->convertToPair( $array);
+                            } else {
+                                $result[$key] = $this->convertToPair( $array );
                             }
                         }
-                    }else{
-                        $result[] = $this->convertToString( $section);
+                    } else {
+                        $result[] = $this->convertToString( $section );
                     }
                 }
-            }else{
-                $result[] = $this->convertToString( $sections);
+            } else {
+                $result[] = $this->convertToString( $sections );
             }
-        }else{
-            $result[] = $this->grossValue( $annotation, $reflection);
+        } else {
+            if( ( $value = $this->grossValue( $annotation, $reflection ) ) !== NULL ) {
+                $result[] = $value;
+            } else {
+                return $result;
+            }
         }
         
         return $result;
     }
     
-    private function getLine(string $annotation, $reflection): ?string
+    
+    private function getLine( string $annotation, $reflection ): ?string
     {
         if( !$this->has( "$annotation", $reflection ) ) {
             return NULL;
         }
-    
+        
         $brokenComment = explode( '*', $reflection->getDocComment() );
-    
+        
         foreach( $brokenComment as $line ) {
             if( strpos( $line, "@$annotation" ) !== FALSE ) {
                 return trim( str_replace( '*', '', $line ) );
@@ -103,20 +133,24 @@ class AnnotationParser implements AnnotationParserInterface
         return NULL;
     }
     
-    private function convertToString(string $value): string
+    
+    private function convertToString( string $value ): string
     {
-        return trim( str_replace( '"', '', $value));
+        return trim( str_replace( '"', '', $value ) );
     }
     
-    private function convertToPair(string $value): array
-    {
-        $subPair = explode( '=>', $value);
     
-        if(is_array( $subPair)) {
-            return [$this->convertToString( $subPair[0] ) => $this->convertToString( $subPair[1] )];
+    private function convertToPair( string $value ): array
+    {
+        if( strpos( $value, self::ARRAY_KEY_PAIR ) !== FALSE ) {
+            $subPair = explode( self::ARRAY_KEY_PAIR, $value );
+            
+            if( is_array( $subPair ) ) {
+                
+                return [ $this->convertToString( $subPair[0] ) => $this->convertToString( $subPair[1] ) ];
+            }
         }
         
-        return [$this->convertToString( $subPair)];
-        
+        return [ $this->convertToString( $value ) ];
     }
 }

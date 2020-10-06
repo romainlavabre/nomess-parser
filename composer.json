@@ -4,7 +4,9 @@
     "type": "library",
     "require": {
         "nomess/config": "*",
-        "ext-yaml": "*"
+        "nomess/cli": "*",
+        "ext-yaml": "*",
+        "ext-mbstring": "*"
     },
     "authors": [
         {
