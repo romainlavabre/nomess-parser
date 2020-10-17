@@ -53,8 +53,7 @@ class AnnotationParser implements AnnotationParserInterface
         
         if( preg_match( '/' . $annotation . '\((.*)\)/i', $reflection->getDocComment(), $output ) ) {
             
-            
-            $output[1] = str_replace( '=>', self::ARRAY_KEY_PAIR, $output[1] );
+            $output[1] = $this->compatibilityMultipleArray( $output[1]);
             
             $sections = explode( ',', $output[1] );
             if( is_array( $sections ) ) {
@@ -77,8 +76,6 @@ class AnnotationParser implements AnnotationParserInterface
                             $result[$key] = (double)$pair[1];
                         } else {
                             
-                            $pair[1] = preg_replace( '/^\[/', '', $pair[1]);
-                            $pair[1] = preg_replace( '/]$/', '', $pair[1]);
                             $pair[1] = preg_replace( '/^\{/', '', $pair[1]);
                             $pair[1] = preg_replace( '/}$/', '', $pair[1]);
                             $array   = explode( self::ARRAY_LINE, $pair[1] );
@@ -118,7 +115,7 @@ class AnnotationParser implements AnnotationParserInterface
     
     private function getLine( string $annotation, $reflection ): ?string
     {
-        if( !$this->has( "$annotation", $reflection ) ) {
+        if( !$this->has( $annotation, $reflection ) ) {
             return NULL;
         }
         
@@ -152,5 +149,16 @@ class AnnotationParser implements AnnotationParserInterface
         }
         
         return [ $this->convertToString( $value ) ];
+    }
+    
+    private function compatibilityMultipleArray(string $str): string
+    {
+        $str = preg_split( '/=\{/', $str);
+        
+        $str = preg_replace_callback( '/.*}/', function (array $found){
+            return str_replace( ',', self::ARRAY_LINE, $found[0]);
+        }, $str);
+        
+        return str_replace( '=>', self::ARRAY_KEY_PAIR, implode( '={', $str) );
     }
 }

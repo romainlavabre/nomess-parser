@@ -15,13 +15,15 @@ class YamlParser implements YamlParserInterface
     public function parse( string $filename )
     {
         $value = yaml_parse_file( $filename );
-        
-        if(is_array($value)){
+    
+        if( is_array( $value) ) {
             return $this->parseArray($value);
-        }elseif(is_string($value)){
+        }
+    
+        if( is_string( $value) ) {
             return $this->parseString($value);
         }
-        
+    
         if($value === false){
             throw new ParseException('The parser encountered an error with file "' . $filename . '"');
         }
@@ -38,10 +40,10 @@ class YamlParser implements YamlParserInterface
     private function parseArray( array $array ): array
     {
         array_walk_recursive( $array, function ( &$value ) {
-            if( is_string( $value ) ) {
-                if( strpos( $value, '%ROOT%' ) !== FALSE ) {
-                    $value = str_replace( '%ROOT%', ROOT, $value );
-                }
+            if( is_string( $value )
+                && strpos( $value, '%ROOT%' ) !== FALSE ) {
+                
+                $value = str_replace( '%ROOT%', ROOT, $value );
             }
         } );
         
